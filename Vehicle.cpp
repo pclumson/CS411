@@ -8,7 +8,6 @@
 #include <cstddef>
 #include <cstdio>
 #include <cstring>
-#include <ostream>
 #include <string>
 
 #include "Vehicle.h"
@@ -129,17 +128,25 @@ bool Vehicle::isValid() const
 }
 
 /**
- * Overloaded insertion operator <<
+ * Returns a string representing vehicle's attributes
  */
-std::ostream &operator <<(std::ostream &os, const Vehicle &vehicle)
+std::string Vehicle::toString() const
 {
 	char str[200];
 
 	// Format string
-	sprintf(str, VEHICLE_STATS, vehicle.make.c_str(), vehicle.model.c_str(), vehicle.engineSize, vehicle.engineCylinders, vehicle.tankSize, vehicle.mpgCity, vehicle.mpgHighway);
+	sprintf(str, VEHICLE_STATS, make.c_str(), model.c_str(), engineSize, engineCylinders, tankSize, mpgCity, mpgHighway);
 
+	return std::string(str);
+}
+
+/**
+ * Overloaded insertion operator <<
+ */
+std::ostream &operator <<(std::ostream &os, const Vehicle &vehicle)
+{
 	// Output formatted string
-	os << str;
+	os << vehicle.toString();
 
 	return os;
 }

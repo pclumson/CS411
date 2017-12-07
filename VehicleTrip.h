@@ -8,7 +8,7 @@
 #ifndef VEHICLE_TRIP_H_
 #define VEHICLE_TRIP_H_
 
-#include <ostream>
+#include <iostream>
 #include <vector>
 
 #include "Trip.h"
@@ -24,7 +24,13 @@ public:
 	VehicleTrip();
 
 	// Constructor allowing caller to specify a vehicle's trip information
-	VehicleTrip(Vehicle vehicle, const Trip &trip, const TripParameters &tripParameters);
+	VehicleTrip(const Vehicle *vehicle, const Trip &trip, const TripParameters &tripParameters);
+
+	// Copy constructor
+	VehicleTrip(const VehicleTrip &vehicleTrip);
+
+	// Destructor
+	~VehicleTrip();
 
 	// Accessor to return the vehicle
 	Vehicle getVehicle() const;
@@ -86,12 +92,15 @@ public:
 	// Returns true/false whether vehicle trip is valid (initialized)
 	bool isValid() const;
 
+	// Overloaded assignment operator =
+	VehicleTrip &operator =(const VehicleTrip &vehicleTrip);
+
 	// Overloaded insertion operator <<
 	friend std::ostream &operator <<(std::ostream &os, const VehicleTrip &vehicleTrip);
 
 private:
 	// Instance variables
-	Vehicle vehicle;
+	Vehicle *vehicle;
 	TripParameters tripParameters;
 	double distanceTraveledCity;
 	double distanceTraveledHighway;

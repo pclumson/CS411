@@ -8,7 +8,6 @@
 #include <cmath>
 #include <cstdio>
 #include <cstring>
-#include <ostream>
 
 #include "VehicleTrip.h"
 
@@ -31,6 +30,8 @@ static const char TRIP_STATS[] =
 VehicleTrip::VehicleTrip()
 {
 	// Initialize variables
+	vehicle = NULL;
+	//tripParameters = TripParameters(); // Not necessary for type TripParameters
 	distanceTraveledCity = 0;
 	distanceTraveledHighway = 0;
 	fuelAdded = 0.0;
@@ -44,15 +45,16 @@ VehicleTrip::VehicleTrip()
 /**
  * Constructor allowing caller to specify a vehicle's trip information
  */
-VehicleTrip::VehicleTrip(Vehicle vehicle, const Trip &trip, const TripParameters &tripParameters)
+VehicleTrip::VehicleTrip(const Vehicle *vehicle, const Trip &trip, const TripParameters &tripParameters)
 {
 	initialized = false;
 
-	if (!vehicle.isValid())
+	// Can't continue if source vehicle is invalid, so just return
+	if (!vehicle || !vehicle->isValid())
 		return;
 
 	// Initialize vehicle
-	this->vehicle = vehicle;
+	this->vehicle = new Vehicle(*vehicle);
 
 	// Initialize trip parameters
 	this->tripParameters = tripParameters;
@@ -74,7 +76,7 @@ VehicleTrip::VehicleTrip(Vehicle vehicle, const Trip &trip, const TripParameters
 	double distanceRemainingForNextLeg = 0.0;
 
 	int leg = 0;
-	fuelRemaining = this->vehicle.getTankSize();
+	fuelRemaining = this->vehicle->getTankSize();
 
 	// Do until we reach our destination (or run out of gas)
 	while (!reachedDestination && !ranOutOfFuel) {
@@ -127,15 +129,15 @@ VehicleTrip::VehicleTrip(Vehicle vehicle, const Trip &trip, const TripParameters
 		// Now that we've determined the distance (both city and highway) to
 		//  travel from this gas station to the next, compute fuel required to
 		//  get to next station
-		double fuelRequiredFromThisGasStation = (distanceFromThisGasStationCity / this->vehicle.getMpgCity()) +
-												(distanceFromThisGasStationHighway / this->vehicle.getMpgHighway());
+		double fuelRequiredFromThisGasStation = (distanceFromThisGasStationCity / this->vehicle->getMpgCity()) +
+												(distanceFromThisGasStationHighway / this->vehicle->getMpgHighway());
 
 		// Compute how much fuel would be used to reach next gas station and
 		//  if we don't have enough to reach station, refuel now before continuing
 		if (fuelRemaining < fuelRequiredFromThisGasStation) {
-			double fuelRequired = this->vehicle.getTankSize() - fuelRemaining;
+			double fuelRequired = this->vehicle->getTankSize() - fuelRemaining;
 			fuelAdded += fuelRequired;
-			fuelRemaining = this->vehicle.getTankSize();
+			fuelRemaining = this->vehicle->getTankSize();
 			fuelStops++;
 		}
 
@@ -156,11 +158,39 @@ VehicleTrip::VehicleTrip(Vehicle vehicle, const Trip &trip, const TripParameters
 }
 
 /**
- * Accessor to return the vehicle
+ * Copy constructor
  */
-Vehicle VehicleTrip::getVehicle() const
+VehicleTrip::VehicleTrip(const VehicleTrip &vehicleTrip)
 {
-	return vehicle;
+	// Can't continue if vehicle is invalid, so just return
+	if (!vehicleTrip.isValid())
+		return;
+
+	// Initialize vehicle (allocates new memory)
+	vehicle = new Vehicle(*vehicleTrip.vehicle);
+
+	// Initialize trip parameters
+	tripParameters = vehicleTrip.tripParameters;
+
+// Initialize member variables
+	distanceTraveledCity = vehicleTrip.distanceTraveledCity;
+	distanceTraveledHighway = vehicleTrip.distanceTraveledHighway;
+	fuelAdded = vehicleTrip.fuelAdded;
+	fuelUsed = vehicleTrip.fuelUsed;
+	fuelRemaining = vehicleTrip.fuelRemaining;
+	fuelStops = vehicleTrip.fuelStops;
+	reachedDestination = vehicleTrip.reachedDestination;
+	initialized = vehicleTrip.initialized;
+}
+
+/**
+ * Destructor
+ */
+VehicleTrip::~VehicleTrip()
+{
+	// Delete existing memory for vehicle
+	if (vehicle)
+		delete vehicle;
 }
 
 /**
@@ -169,6 +199,17 @@ Vehicle VehicleTrip::getVehicle() const
 double VehicleTrip::getDistanceTraveledCity() const
 {
 	return distanceTraveledCity;
+}
+
+/**
+ * Accessor to return the vehicle
+ */
+Vehicle VehicleTrip::getVehicle() const
+{
+	if (!vehicle)
+		return Vehicle();
+
+	return *vehicle;
 }
 
 /**
@@ -216,7 +257,8 @@ int VehicleTrip::getFuelStops() const
  */
 double VehicleTrip::getTime() const
 {
-	if (!vehicle.isValid() || tripParameters.getMphCity() == 0 || tripParameters.getMphHighway() == 0)
+	// Can't continue if vehicle is invalid, so just return 0.0
+	if (!vehicle || !vehicle->isValid() || tripParameters.getMphCity() == 0 || tripParameters.getMphHighway() == 0)
 		return 0.0;
 
 	// Determine time to drive
@@ -269,7 +311,8 @@ int VehicleTrip::getTimeNumMinutes() const
  */
 double VehicleTrip::getFuelAddedCost() const
 {
-	if (!vehicle.isValid())
+	// Can't continue if vehicle is invalid, so just return 0.0
+	if (!vehicle || !vehicle->isValid())
 		return 0.0;
 
 	return fuelAdded * tripParameters.getFuelPrice();
@@ -280,7 +323,8 @@ double VehicleTrip::getFuelAddedCost() const
  */
 double VehicleTrip::getFuelUsedCost() const
 {
-	if (!vehicle.isValid())
+	// Can't continue if vehicle is invalid, so just return 0.0
+	if (!vehicle || !vehicle->isValid())
 		return 0.0;
 
 	return fuelUsed * tripParameters.getFuelPrice();
@@ -291,7 +335,7 @@ double VehicleTrip::getFuelUsedCost() const
  */
 bool VehicleTrip::isTimeLessThan(const VehicleTrip &vehicleTrip) const
 {
-	return (!vehicleTrip.isValid() || (vehicleTrip.reachedDestination && (getTime() == 0.0 || getTime() < vehicleTrip.getTime())));
+	return (!vehicleTrip.isValid() || (vehicleTrip.reachedDestination && (!isValid() || getTime() < vehicleTrip.getTime())));
 }
 
 /**
@@ -299,7 +343,7 @@ bool VehicleTrip::isTimeLessThan(const VehicleTrip &vehicleTrip) const
  */
 bool VehicleTrip::isTimeMoreThan(const VehicleTrip &vehicleTrip) const
 {
-	return (!vehicleTrip.isValid() || (vehicleTrip.reachedDestination && (getTime() == 0.0 || getTime() > vehicleTrip.getTime())));
+	return (!vehicleTrip.isValid() || (vehicleTrip.reachedDestination && (!isValid() || getTime() > vehicleTrip.getTime())));
 }
 
 /**
@@ -307,7 +351,7 @@ bool VehicleTrip::isTimeMoreThan(const VehicleTrip &vehicleTrip) const
  */
 bool VehicleTrip::isFuelAddedCostLessThan(const VehicleTrip &vehicleTrip) const
 {
-	return (!vehicleTrip.isValid() || (vehicleTrip.reachedDestination && (getFuelAddedCost() == 0.0 || getFuelAddedCost() < vehicleTrip.getFuelAddedCost())));
+	return (!vehicleTrip.isValid() || (vehicleTrip.reachedDestination && (!isValid() || getFuelAddedCost() < vehicleTrip.getFuelAddedCost())));
 }
 
 /**
@@ -315,7 +359,7 @@ bool VehicleTrip::isFuelAddedCostLessThan(const VehicleTrip &vehicleTrip) const
  */
 bool VehicleTrip::isFuelAddedCostMoreThan(const VehicleTrip &vehicleTrip) const
 {
-	return (!vehicleTrip.isValid() || (vehicleTrip.reachedDestination && (getFuelAddedCost() == 0.0 || getFuelAddedCost() > vehicleTrip.getFuelAddedCost())));
+	return (!vehicleTrip.isValid() || (vehicleTrip.reachedDestination && (!isValid() || getFuelAddedCost() > vehicleTrip.getFuelAddedCost())));
 }
 
 /**
@@ -323,7 +367,7 @@ bool VehicleTrip::isFuelAddedCostMoreThan(const VehicleTrip &vehicleTrip) const
  */
 bool VehicleTrip::isFuelUsedCostLessThan(const VehicleTrip &vehicleTrip) const
 {
-	return (!vehicleTrip.isValid() || (vehicleTrip.reachedDestination && (getFuelUsedCost() == 0.0 || getFuelUsedCost() < vehicleTrip.getFuelUsedCost())));
+	return (!vehicleTrip.isValid() || (vehicleTrip.reachedDestination && (!isValid() || getFuelUsedCost() < vehicleTrip.getFuelUsedCost())));
 }
 
 /**
@@ -331,7 +375,7 @@ bool VehicleTrip::isFuelUsedCostLessThan(const VehicleTrip &vehicleTrip) const
  */
 bool VehicleTrip::isFuelUsedCostMoreThan(const VehicleTrip &vehicleTrip) const
 {
-	return (!vehicleTrip.isValid() || (vehicleTrip.reachedDestination && (getFuelUsedCost() == 0.0 || getFuelUsedCost() > vehicleTrip.getFuelUsedCost())));
+	return (!vehicleTrip.isValid() || (vehicleTrip.reachedDestination && (!isValid() || getFuelUsedCost() > vehicleTrip.getFuelUsedCost())));
 }
 
 /**
@@ -343,11 +387,50 @@ bool VehicleTrip::isValid() const
 }
 
 /**
+ * Overloaded assignment operator =
+ */
+VehicleTrip &VehicleTrip::operator =(const VehicleTrip &vehicleTrip)
+{
+	// Ignore if assignment to self (vt = vt)
+	if (this == &vehicleTrip)
+		return *this;
+
+	// Delete existing memory for vehicle
+	if (vehicle) {
+		delete vehicle;
+		vehicle = NULL;
+	}
+
+	// Initialize vehicle (allocates new memory)
+	if (vehicleTrip.vehicle)
+		vehicle = new Vehicle(*vehicleTrip.vehicle);
+
+	// Initialize trip parameters
+	tripParameters = vehicleTrip.tripParameters;
+
+	// Initialize member variables
+	distanceTraveledCity = vehicleTrip.distanceTraveledCity;
+	distanceTraveledHighway = vehicleTrip.distanceTraveledHighway;
+	fuelAdded = vehicleTrip.fuelAdded;
+	fuelUsed = vehicleTrip.fuelUsed;
+	fuelRemaining = vehicleTrip.fuelRemaining;
+	fuelStops = vehicleTrip.fuelStops;
+	reachedDestination = vehicleTrip.reachedDestination;
+	initialized = vehicleTrip.initialized;
+
+	return *this;
+}
+
+/**
  * Overloaded insertion operator <<
  */
 std::ostream &operator <<(std::ostream &os, const VehicleTrip &vehicleTrip)
 {
-	char str[400]; // Plenty large for worst case scenario
+	char str[400];
+
+	// Can't continue if RHS VehicleTrip is invalid, so just return
+	if (!vehicleTrip.isValid())
+		return os;
 
 	// Format string
 	sprintf(str, TRIP_STATS, vehicleTrip.getTime(),
@@ -356,7 +439,7 @@ std::ostream &operator <<(std::ostream &os, const VehicleTrip &vehicleTrip)
 		vehicleTrip.fuelAdded, vehicleTrip.fuelUsed, vehicleTrip.fuelRemaining, vehicleTrip.fuelStops);
 
 	// Output formatted string
-	os << vehicleTrip.vehicle << std::endl << "  " << str;
+	os << *vehicleTrip.vehicle << std::endl << "  " << str;
 
 	return os;
 }

@@ -21,7 +21,7 @@
 class VehicleRecords {
 public:
 	// Get list of vehicles
-	static std::vector<Vehicle> getVehicles(const char filename[]) throw (std::ifstream::failure, std::invalid_argument, std::out_of_range);
+	static std::vector<Vehicle *> getVehicles(const char filename[]) throw (std::ifstream::failure, std::invalid_argument, std::out_of_range);
 
 	// Format vehicle trip header as a string for storing in a file
 	static std::string formatHeaderForFile();

@@ -20,8 +20,15 @@ public:
 	// Default constructor
 	Trip();
 
-	// Accessor to return list of trip legs
-	std::vector<TripLeg> getLegs() const;
+	// Copy constructor
+	Trip(const Trip &trip);
+
+	// Destructor
+	~Trip();
+
+	// Accessor to return list of pointers to trip legs
+ 	//  (caller must delete memory for trip legs referenced by list of pointers)
+	std::vector<TripLeg *> getLegs() const;
 
 	// Accessor to return the number of trip legs
 	int getNumberLegs() const;
@@ -38,9 +45,12 @@ public:
 	// Accessor to return the distance traveled on the highway (miles)
 	double getHighwayDistance() const;
 
+	// Overloaded assignment operator =
+	Trip &operator =(const Trip &trip);
+
 private:
 	// Instance variables
-	std::vector<TripLeg> tripLegs;
+	std::vector<TripLeg *> tripLegs;
 };
 
 #endif /* TRIP_H_ */

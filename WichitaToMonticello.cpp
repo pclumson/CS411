@@ -207,7 +207,7 @@ int main()
 	Trip trip;
 
 	// Get list of vehicles
-	vector<Vehicle> vehicles;
+	vector<Vehicle *> vehicles;
 	try {
 		vehicles = VehicleRecords::getVehicles(FILENAME_VEHICLES);
 	} catch (const ifstream::failure &e) {

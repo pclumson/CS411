@@ -20,7 +20,7 @@ static std::string RECORD_DELIMITER = "|";
 /**
  * Deserialize vehicle record from string to class
  */
-static Vehicle deserialize(std::string recordString) throw (std::invalid_argument, std::out_of_range)
+static Vehicle *deserialize(std::string recordString) throw (std::invalid_argument, std::out_of_range)
 {
 	// Transform vehicle record from a string to a tokenized string (vector of strings)
 	std::vector<std::string> record = StringEnh::tokenize(recordString, RECORD_DELIMITER);
@@ -118,7 +118,7 @@ static Vehicle deserialize(std::string recordString) throw (std::invalid_argumen
 	}
 
 	// Return vehicle
-	return Vehicle(make, model, engineSize, engineCylinders, tankSize, mphCity, mphHighway);
+	return new Vehicle(make, model, engineSize, engineCylinders, tankSize, mphCity, mphHighway);
 }
 
 /**
@@ -131,9 +131,9 @@ VehicleRecords::VehicleRecords()
 /**
  * Get list of vehicles
  */
-std::vector<Vehicle> VehicleRecords::getVehicles(const char filename[]) throw (std::ifstream::failure, std::invalid_argument, std::out_of_range)
+std::vector<Vehicle *> VehicleRecords::getVehicles(const char filename[]) throw (std::ifstream::failure, std::invalid_argument, std::out_of_range)
 {
-	std::vector<Vehicle> vehicles;
+	std::vector<Vehicle *> vehicles;
 	std::ifstream ifs;
 
 	// Enable throwing of fail and bad exceptions

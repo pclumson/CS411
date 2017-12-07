@@ -48,6 +48,9 @@ public:
 	// Returns true/false whether vehicle is valid (initialized)
 	bool isValid() const;
 
+	// Returns a string representing vehicle's attributes
+	std::string toString() const;
+
 	// Overloaded insertion operator <<
 	friend std::ostream &operator <<(std::ostream &os, const Vehicle &vehicle);
 
